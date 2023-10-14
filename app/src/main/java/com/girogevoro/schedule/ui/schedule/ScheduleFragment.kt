@@ -1,59 +1,96 @@
 package com.girogevoro.schedule.ui.schedule
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import com.girogevoro.schedule.R
+import android.widget.Toast
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.girogevoro.schedule.CURRENT_DATE
+import com.girogevoro.schedule.databinding.FragmentScheduleBinding
+import com.girogevoro.schedule.domain.entity.Lesson
+import com.girogevoro.schedule.utils.ViewBindingFragment
+import jt.projects.gbschool.ui.classes.LessonAdapter
+import jt.projects.gbschool.ui.classes.ScheduleViewModel
+import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class ScheduleFragment : ViewBindingFragment<FragmentScheduleBinding>() {
 
-/**
- * A simple [Fragment] subclass.
- * Use the [ScheduleFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class ScheduleFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    val scheduleViewModel: ScheduleViewModel by viewModel()
+    private val lessonAdapter by lazy { LessonAdapter(::onItemClicked) }
+    private fun onItemClicked(data: Lesson) {
+        try {
+            val sky = Intent(Intent.ACTION_VIEW)
+            sky.data = Uri.parse("skype:${data.teacher}?call&video=true")
+            val chosenIntent = Intent.createChooser(sky, "Выберите программу")
+            startActivity(chosenIntent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(requireContext(), e.message.toString(), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_schedule, container, false)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        initUi()
+        observeViewModelData()
+        observeLoadingVisible()
+    }
+
+    private fun initUi() {
+        binding.tvTodayInfo.text = "Today, ${CURRENT_DATE.dayOfMonth} ${CURRENT_DATE.month}"
+
+        with(binding.rvClassesList) {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = lessonAdapter
+        }
+    }
+
+    private fun observeViewModelData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                scheduleViewModel
+                    .getResultRecycler()
+                    .collect {
+                        lessonAdapter.setData(it)
+
+                        val curLessonIndex = it.indexOf(it.findLast { lesson ->
+                            lesson.isCurrent
+                        })
+                        if (curLessonIndex != -1) {
+                            binding.rvClassesList.scrollToPosition(curLessonIndex)
+                        }
+                    }
+            }
+        }
+    }
+
+    private fun observeLoadingVisible() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                scheduleViewModel.getIsLoading().collect {
+                    binding.loadingFrameLayout.root.isVisible = it
+                }
+            }
+        }
     }
 
     companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment ScheduleFragment.
-         */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
+        fun newInstance() =
             ScheduleFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
                 }
             }
     }

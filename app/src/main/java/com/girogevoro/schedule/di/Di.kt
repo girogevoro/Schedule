@@ -7,12 +7,14 @@ import com.girogevoro.schedule.data.lessons_repo.LessonsRepo
 import com.girogevoro.schedule.domain.HomeworkInteractor
 import com.girogevoro.schedule.domain.LessonInteractor
 import com.girogevoro.schedule.ui.home.HomeViewModel
+import jt.projects.gbschool.ui.classes.ScheduleViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 object Di {
     val viewModuleModule = module {
         viewModel { HomeViewModel(lessonInteractor = get(), homeworkInteractor = get()) }
+        viewModel { ScheduleViewModel(lessonInteractor = get()) }
     }
     val repoModule = module {
         // interactors
