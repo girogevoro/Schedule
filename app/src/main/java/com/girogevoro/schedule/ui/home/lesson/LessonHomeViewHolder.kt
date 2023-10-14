@@ -1,4 +1,4 @@
-package com.girogevoro.schedule.ui.home
+package com.girogevoro.schedule.ui.home.lesson
 
 import android.view.LayoutInflater
 import android.view.ViewGroup

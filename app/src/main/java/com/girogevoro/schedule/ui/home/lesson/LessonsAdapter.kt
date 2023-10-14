@@ -1,4 +1,4 @@
-package com.girogevoro.schedule.ui.home
+package com.girogevoro.schedule.ui.home.lesson
 
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView

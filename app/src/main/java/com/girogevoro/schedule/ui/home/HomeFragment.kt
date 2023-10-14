@@ -7,13 +7,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.girogevoro.schedule.databinding.FragmentHomeBinding
+import com.girogevoro.schedule.ui.home.lesson.LessonsAdapter
 import com.girogevoro.schedule.utils.ViewBindingFragment
+import com.girogevoro.schedule.ui.home.homework.HomeworkAdapter
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeFragment : ViewBindingFragment<FragmentHomeBinding>() {
     private val homeViewModel: HomeViewModel by viewModel()
     private val classesAdapter by lazy { LessonsAdapter() }
+    private val homeworkAdapter by lazy { HomeworkAdapter() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {}
@@ -24,6 +27,7 @@ class HomeFragment : ViewBindingFragment<FragmentHomeBinding>() {
         observeTimerData()
         initUi()
         observeLessonsData()
+        observeHomeworkData()
         observeLoadingVisible()
     }
 
@@ -49,7 +53,11 @@ class HomeFragment : ViewBindingFragment<FragmentHomeBinding>() {
         with(binding.homeSection2.lessonsListRv) {
             adapter = classesAdapter
         }
+        with(binding.homeSection3.homeworkListRv) {
+            adapter = homeworkAdapter
+        }
     }
+
     private fun observeLessonsData() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -68,11 +76,29 @@ class HomeFragment : ViewBindingFragment<FragmentHomeBinding>() {
         }
     }
 
+    private fun observeHomeworkData() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.getHomeworkRecycler().collect {
+                    homeworkAdapter.setData(it)
+                }
+            }
+        }
+    }
+
     private fun observeLoadingVisible() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 homeViewModel.getIsLoadingLessons().collect {
                     binding.homeSection2.loadingFrameLayout.root.isVisible = it
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.getIsLoadingHomework().collect {
+                    binding.homeSection3.loadingFrameLayout.root.isVisible = it
                 }
             }
         }

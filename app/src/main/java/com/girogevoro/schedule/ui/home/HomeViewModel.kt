@@ -8,6 +8,7 @@ import com.girogevoro.schedule.CURRENT_DATE_TIME
 import com.girogevoro.schedule.EXAMS_DATE
 import com.girogevoro.schedule.domain.HomeworkInteractor
 import com.girogevoro.schedule.domain.LessonInteractor
+import com.girogevoro.schedule.domain.entity.Homework
 import com.girogevoro.schedule.domain.entity.Lesson
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +31,16 @@ class HomeViewModel(
 
     private val isLoadingLessons = MutableStateFlow(true)
 
+
+    private val homeworkRecycler = MutableStateFlow<List<Homework>>(listOf())
+    private var jobHomework: Job? = null
+
+    private val isLoadingHomework = MutableStateFlow(true)
+
     init {
         initTimer()
         loadLessons(CURRENT_DATE)
+        loadHomework(CURRENT_DATE)
     }
 
     fun getResultTimer(): StateFlow<String> {
@@ -45,6 +53,14 @@ class HomeViewModel(
 
     fun getIsLoadingLessons(): StateFlow<Boolean> {
         return isLoadingLessons.asStateFlow()
+    }
+
+    fun getHomeworkRecycler(): StateFlow<List<Homework>> {
+        return homeworkRecycler.asStateFlow()
+    }
+
+    fun getIsLoadingHomework(): StateFlow<Boolean> {
+        return isLoadingHomework.asStateFlow()
     }
 
     private fun initTimer() {
@@ -99,6 +115,19 @@ class HomeViewModel(
         }
     }
 
+    private fun loadHomework(date: LocalDate) {
+        jobHomework?.cancel()
+        jobHomework = viewModelScope.launch {
+            isLoadingHomework.tryEmit(true)
+            homeworkInteractor.getHomeworkByDate(date)
+                .onEach {
+                    homeworkRecycler.tryEmit(it)
+                    isLoadingHomework.tryEmit(false)
+                }.collect()
+        }
+    }
+
 }
+
 
 
